@@ -55,6 +55,12 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Generate SHA256 checksums
+        if: steps.check_tag.outputs.exists == 'false'
+        run: |
+          cd release
+          sha256sum *.deb > SHA256SUMS.txt
+
       - name: Create Release and Upload Assets
         if: steps.check_tag.outputs.exists == 'false'
         uses: softprops/action-gh-release@v2
@@ -65,5 +71,6 @@ jobs:
           prerelease: false
           files: |
             release/*.deb
+            release/SHA256SUMS.txt
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
