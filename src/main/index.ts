@@ -40,7 +40,9 @@ function createWindow() {
 
     // Mở link ngoài (download, external) bằng system browser
     mainWindow.webContents.setWindowOpenHandler(({ url }) => {
-        if (!url.startsWith('https://chat.zalo.me')) {
+        const zaloHosts = ['chat.zalo.me', 'zalo.me', 'id.zalo.me', 'account.zalo.me']
+        const isZalo = zaloHosts.some(host => url.includes(host))
+        if (!isZalo) {
             shell.openExternal(url)
             return { action: 'deny' }
         }
