@@ -11,7 +11,7 @@ export function createTray(win: BrowserWindow) {
     const menu = Menu.buildFromTemplate([
         { label: 'Mở Zalo', click: () => win.show() },
         { type: 'separator' },
-        { label: 'Thoát', click: () => { (app as any).isQuitting = true; app.quit() } },
+        { label: 'Thoát', click: () => { app.quit() } },
     ])
 
     tray.setContextMenu(menu)

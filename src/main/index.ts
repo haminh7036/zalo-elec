@@ -6,6 +6,11 @@ import { createTray } from './tray'
 const ZALO_URL = 'https://chat.zalo.me'
 
 let mainWindow: BrowserWindow | null = null
+let isQuitting = false
+
+app.on('before-quit', () => {
+    isQuitting = true
+})
 
 function createWindow() {
     mainWindow = new BrowserWindow({
@@ -43,7 +48,7 @@ function createWindow() {
     })
 
     mainWindow.on('close', (e) => {
-        if (!app.isQuitting) {
+        if (!isQuitting) {
             e.preventDefault()
             mainWindow?.hide() // minimize to tray thay vì quit
         }
@@ -74,7 +79,3 @@ app.whenReady().then(() => {
 app.on('window-all-closed', () => {
     if (process.platform !== 'darwin') app.quit()
 })
-
-// Flag để phân biệt quit thật vs hide
-declare global { namespace NodeJS { interface Global { isQuitting: boolean } } }
-Object.defineProperty(app, 'isQuitting', { get: () => false, set: () => { }, configurable: true })
