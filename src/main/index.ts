@@ -40,14 +40,21 @@ function createWindow() {
         autoHideMenuBar: true,
     })
 
-    // Override User-Agent cho mọi HTTP request trong session persist:zalo
+    // Override User-Agent ở MỌI tầng:
+    // 1. Session UA → quyết định navigator.userAgent trong JavaScript
     const ses = session.fromPartition('persist:zalo')
+    ses.setUserAgent(ZALO_PC_USER_AGENT)
+
+    // 2. WebContents UA → đảm bảo webContents cũng dùng đúng UA
+    mainWindow.webContents.setUserAgent(ZALO_PC_USER_AGENT)
+
+    // 3. HTTP headers → override trực tiếp header cho mọi request
     ses.webRequest.onBeforeSendHeaders((details, callback) => {
         details.requestHeaders['User-Agent'] = ZALO_PC_USER_AGENT
         callback({ requestHeaders: details.requestHeaders })
     })
 
-    mainWindow.loadURL(ZALO_URL, { userAgent: ZALO_PC_USER_AGENT })
+    mainWindow.loadURL(ZALO_URL)
 
     mainWindow.webContents.session.setPermissionRequestHandler(
         (webContents, permission, callback) => {
