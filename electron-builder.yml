@@ -1,0 +1,20 @@
+appId: com.haminh7036.zalo
+productName: Zalo
+
+files:
+  - dist/**/*
+  - resources/**/*
+
+linux:
+  target:
+    - AppImage
+    - deb
+  category: Network
+  icon: resources/zalo.ico
+  desktop:
+    StartupWMClass: zalo-electron   # đảm bảo taskbar grouping đúng
+
+# Single instance lock
+protocols:
+  - name: Zalo
+    schemes: [zalo]
