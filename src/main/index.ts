@@ -36,6 +36,72 @@ function getChromeUserAgent(): string {
 }
 
 /**
+ * Resolves the absolute path to a resource file, handling both packaged 
+ * and development environments.
+ * 
+ * @param {string} relativePath Path relative to the resources directory.
+ * @returns {string} The absolute path to the resource.
+ */
+function getResourcePath(relativePath: string): string {
+    return app.isPackaged
+        ? join(process.resourcesPath, relativePath)
+        : join(__dirname, '../../', relativePath)
+}
+
+/**
+ * Injects ZaDark emoji styles and scripts into the provided web contents.
+ * 
+ * @param {Electron.WebContents} webContents The web contents to inject into.
+ */
+function injectZaDarkEmoji(webContents: Electron.WebContents) {
+    try {
+        const cssPath = getResourcePath('resources/emoji/reaction.css')
+        const jsPath = getResourcePath('resources/emoji/zadark-reaction.min.js')
+        const imgPath = getResourcePath('resources/emoji/zalo-emoji-md.png')
+
+        const css = fs.readFileSync(cssPath, 'utf-8')
+        const js = fs.readFileSync(jsPath, 'utf-8')
+        const imgBase64 = fs.readFileSync(imgPath).toString('base64')
+        const imgDataUri = `data:image/png;base64,${imgBase64}`
+
+        webContents.insertCSS(css)
+        webContents.executeJavaScript(`
+            document.documentElement.setAttribute('data-zadark-emoji-url', '${imgDataUri}');
+            ${js}
+        `)
+    } catch (err) {
+        console.error('[Emoji Injector] Failed to inject emoji features:', err)
+    }
+}
+
+/**
+ * Checks if a URL belongs to Zalo's internal ecosystem.
+ * 
+ * @param {string} targetUrl The URL to check.
+ * @returns {boolean} True if the URL is internal to Zalo, false otherwise.
+ */
+function isInternalZaloUrl(targetUrl: string) {
+    if (targetUrl === 'about:blank') return true;
+    try {
+        const parsedUrl = new URL(targetUrl)
+        // Define core internal domains that should stay within the app
+        const internalHosts = ['chat.zalo.me', 'id.zalo.me', 'account.zalo.me']
+
+        // Check if it's a sub-domain or related Zalo link (e.g., zalo.me/...)
+        // but exclude non-app domains to force them to open in an external browser.
+        if (parsedUrl.hostname === 'zalo.me' || parsedUrl.hostname.endsWith('.zalo.me')) {
+            if (!internalHosts.includes(parsedUrl.hostname)) {
+                return false
+            }
+        }
+
+        return internalHosts.includes(parsedUrl.hostname)
+    } catch (err) {
+        return false
+    }
+}
+
+/**
  * Creates the main application window and sets up web preferences, 
  * session headers, and event listeners.
  */
@@ -70,32 +136,7 @@ function createWindow() {
 
     // Inject ZaDark emoji styles and scripts after the DOM is ready
     mainWindow.webContents.on('dom-ready', () => {
-        try {
-            const cssPath = app.isPackaged
-                ? join(process.resourcesPath, 'resources/emoji/reaction.css')
-                : join(__dirname, '../../resources/emoji/reaction.css')
-
-            const jsPath = app.isPackaged
-                ? join(process.resourcesPath, 'resources/emoji/zadark-reaction.min.js')
-                : join(__dirname, '../../resources/emoji/zadark-reaction.min.js')
-
-            const imgPath = app.isPackaged
-                ? join(process.resourcesPath, 'resources/emoji/zalo-emoji-md.png')
-                : join(__dirname, '../../resources/emoji/zalo-emoji-md.png')
-
-            const css = fs.readFileSync(cssPath, 'utf-8')
-            const js = fs.readFileSync(jsPath, 'utf-8')
-            const imgBase64 = fs.readFileSync(imgPath).toString('base64')
-            const imgDataUri = `data:image/png;base64,${imgBase64}`
-
-            mainWindow?.webContents.insertCSS(css)
-            mainWindow?.webContents.executeJavaScript(`
-                document.documentElement.setAttribute('data-zadark-emoji-url', '${imgDataUri}');
-                ${js}
-            `)
-        } catch (err) {
-            console.error('[Emoji Injector] Failed to inject emoji features:', err)
-        }
+        injectZaDarkEmoji(mainWindow!.webContents)
     })
 
     // Automatically allow necessary permissions for a chat application
@@ -106,58 +147,6 @@ function createWindow() {
         }
     )
 
-    /**
-     * Checks if a URL belongs to Zalo's internal ecosystem.
-     * 
-     * @param {string} targetUrl The URL to check.
-     * @returns {boolean} True if the URL is internal to Zalo, false otherwise.
-     */
-    function isInternalZaloUrl(targetUrl: string) {
-        if (targetUrl === 'about:blank') return true;
-        try {
-            const parsedUrl = new URL(targetUrl)
-            // Define core internal domains that should stay within the app
-            const internalHosts = ['chat.zalo.me', 'id.zalo.me', 'account.zalo.me']
-
-            // Check if it's a sub-domain or related Zalo link (e.g., zalo.me/...)
-            // but exclude non-app domains to force them to open in an external browser.
-            if (parsedUrl.hostname === 'zalo.me' || parsedUrl.hostname.endsWith('.zalo.me')) {
-                if (!internalHosts.includes(parsedUrl.hostname)) {
-                    return false
-                }
-            }
-
-            return internalHosts.includes(parsedUrl.hostname)
-        } catch (err) {
-            return false
-        }
-    }
-
-    // Global handler for navigation and new windows to ensure external links 
-    // open in the system's default browser.
-    app.on('web-contents-created', (event, contents) => {
-        contents.setWindowOpenHandler(({ url }) => {
-            if (url === 'about:blank') return { action: 'allow' }
-
-            if (!isInternalZaloUrl(url)) {
-                shell.openExternal(url)
-                return { action: 'deny' }
-            }
-            return { action: 'allow' }
-        })
-
-        contents.on('will-navigate', (event, url) => {
-            if (!isInternalZaloUrl(url)) {
-                event.preventDefault()
-                shell.openExternal(url)
-                // Close intermediary popup windows (e.g., about:blank redirects)
-                if (contents.id !== mainWindow?.webContents.id) {
-                    contents.close()
-                }
-            }
-        })
-    })
-
     // Prevent the app from quitting when the window is closed; hide it to tray instead.
     mainWindow.on('close', (e) => {
         if (!isQuitting) {
@@ -166,6 +155,31 @@ function createWindow() {
         }
     })
 }
+
+// Global handler for navigation and new windows to ensure external links 
+// open in the system's default browser.
+app.on('web-contents-created', (event, contents) => {
+    contents.setWindowOpenHandler(({ url }) => {
+        if (url === 'about:blank') return { action: 'allow' }
+
+        if (!isInternalZaloUrl(url)) {
+            shell.openExternal(url)
+            return { action: 'deny' }
+        }
+        return { action: 'allow' }
+    })
+
+    contents.on('will-navigate', (event, url) => {
+        if (!isInternalZaloUrl(url)) {
+            event.preventDefault()
+            shell.openExternal(url)
+            // Close intermediary popup windows (e.g., about:blank redirects)
+            if (mainWindow && contents.id !== mainWindow.webContents.id) {
+                contents.close()
+            }
+        }
+    })
+})
 
 // Ensure only one instance of the application is running
 const gotLock = app.requestSingleInstanceLock()
