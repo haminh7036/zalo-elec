@@ -4,7 +4,12 @@ productName: Zalo
 files:
   - dist/**/*
   - resources/**/*
-  - "!node_modules"
+  - "!node_modules${/*}"
+  - "!.git${/*}"
+  - "!src${/*}"
+  - "!tsconfig.json"
+  - "!pnpm-lock.yaml"
+  - "!pnpm-workspace.yaml"
 
 linux:
   target:
