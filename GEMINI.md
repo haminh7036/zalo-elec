@@ -18,19 +18,19 @@ Key features include:
   - `resources/`: Contains static assets like the app icon and the emoji injector scripts/CSS.
 
 ## Building and Running
-The project relies on standard npm scripts defined in `package.json`:
+The project relies on standard pnpm scripts defined in `package.json`:
 
 - **Build:** Compile TypeScript to JavaScript.
   ```bash
-  npm run build
+  pnpm run build
   ```
 - **Start (Development):** Compile and launch the Electron application locally.
   ```bash
-  npm run start
+  pnpm run start
   ```
 - **Package:** Compile and package the application for distribution using `electron-builder`.
   ```bash
-  npm run dist
+  pnpm run dist
   ```
 
 ## Development Conventions

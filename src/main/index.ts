@@ -23,9 +23,13 @@ app.on('before-quit', () => {
  */
 function getChromeUserAgent(): string {
     const ua = app.userAgentFallback
+    const appName = app.getName()
+    const nameRegex = new RegExp(`\\s*${appName}/[\\w.-]+`, 'i')
+
     return ua
         .replace(/\s*Electron\/[\w.-]+/i, '')
-        .replace(/\s*zalo-elec\/[\w.-]+/i, '')
+        .replace(nameRegex, '')
+        .replace(/\s*zalo-elec\/[\w.-]+/i, '') // Phòng hờ nếu vẫn còn tên cũ
 }
 
 function createWindow() {

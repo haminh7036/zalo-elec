@@ -16,27 +16,25 @@
 ## Yêu Cầu Hệ Thống
 
 - [Node.js](https://nodejs.org/) (Phiên bản tương thích với Electron).
-- `npm` hoặc `pnpm` (dự án sử dụng file `pnpm-workspace.yaml` / `pnpm-lock.yaml`, khuyến khích dùng pnpm).
+- `pnpm` (dự án sử dụng file `pnpm-workspace.yaml` / `pnpm-lock.yaml`).
 
 ## Cài Đặt và Khởi Chạy
 
 1. **Cài đặt các gói phụ thuộc:**
    ```bash
-   npm install
-   # hoặc nếu bạn dùng pnpm:
    pnpm install
    ```
 
 2. **Chạy ứng dụng trong môi trường phát triển:**
    Lệnh này sẽ biên dịch TypeScript và mở ứng dụng:
    ```bash
-   npm run start
+   pnpm run start
    ```
 
 3. **Đóng gói ứng dụng (Build):**
    Để tạo ra bản cài đặt (AppImage, deb cho Linux):
    ```bash
-   npm run dist
+   pnpm run dist
    ```
    Kết quả sẽ được lưu trong thư mục `dist/`.
 
