@@ -18,8 +18,11 @@ app.on('before-quit', () => {
 })
 
 /**
- * Loại bỏ "Electron/xxx" và tên app khỏi User-Agent
- * để Zalo không detect Electron và cho phép hiển thị trang QR login.
+ * Removes "Electron/xxx" and the app name from the User-Agent string.
+ * This ensures Zalo doesn't detect the application as an Electron-based environment,
+ * enabling features like the QR code login page.
+ * 
+ * @returns {string} The modified Chrome-like User-Agent string.
  */
 function getChromeUserAgent(): string {
     const ua = app.userAgentFallback
@@ -29,11 +32,15 @@ function getChromeUserAgent(): string {
     return ua
         .replace(/\s*Electron\/[\w.-]+/i, '')
         .replace(nameRegex, '')
-        .replace(/\s*zalo-elec\/[\w.-]+/i, '') // Phòng hờ nếu vẫn còn tên cũ
+        .replace(/\s*zalo-elec\/[\w.-]+/i, '') // Safety check for old app name
 }
 
+/**
+ * Creates the main application window and sets up web preferences, 
+ * session headers, and event listeners.
+ */
 function createWindow() {
-    // Giả lập Chrome UA trước khi tạo window
+    // Spoof the User-Agent before creating the window to ensure it's applied early
     const chromeUA = getChromeUserAgent()
     app.userAgentFallback = chromeUA
 
@@ -45,15 +52,14 @@ function createWindow() {
         title: 'Zalo',
         icon: join(__dirname, '../../resources/icon.png'),
         webPreferences: {
-            // Không cần preload nếu chỉ wrap web
-            contextIsolation: true,
-            sandbox: true,              // bật sandbox — web wrapper không cần Node access
-            partition: 'persist:zalo', // session riêng, giữ login giữa các lần
+            contextIsolation: true, // Standard security practice
+            sandbox: true,          // Restrict web wrapper's access to Node.js APIs
+            partition: 'persist:zalo', // Separate session to persist login status
         },
         autoHideMenuBar: true,
     })
 
-    // Override User-Agent cho session persist:zalo
+    // Force the spoofed User-Agent for the 'persist:zalo' partition
     const ses = session.fromPartition('persist:zalo')
     ses.webRequest.onBeforeSendHeaders((details, callback) => {
         details.requestHeaders['User-Agent'] = chromeUA
@@ -62,7 +68,7 @@ function createWindow() {
 
     mainWindow.loadURL(ZALO_URL, { userAgent: chromeUA })
 
-    // Inject chức năng emoji của ZaDark
+    // Inject ZaDark emoji styles and scripts after the DOM is ready
     mainWindow.webContents.on('dom-ready', () => {
         try {
             const cssPath = app.isPackaged
@@ -92,6 +98,7 @@ function createWindow() {
         }
     })
 
+    // Automatically allow necessary permissions for a chat application
     mainWindow.webContents.session.setPermissionRequestHandler(
         (webContents, permission, callback) => {
             const allowed = ['notifications', 'media', 'microphone', 'camera']
@@ -99,15 +106,21 @@ function createWindow() {
         }
     )
 
-    // Hàm kiểm tra xem URL có phải là trang nội bộ của Zalo không
+    /**
+     * Checks if a URL belongs to Zalo's internal ecosystem.
+     * 
+     * @param {string} targetUrl The URL to check.
+     * @returns {boolean} True if the URL is internal to Zalo, false otherwise.
+     */
     function isInternalZaloUrl(targetUrl: string) {
         if (targetUrl === 'about:blank') return true;
         try {
             const parsedUrl = new URL(targetUrl)
-            // Chỉ giữ lại các trang đích thực sự của web app
+            // Define core internal domains that should stay within the app
             const internalHosts = ['chat.zalo.me', 'id.zalo.me', 'account.zalo.me']
 
-            // Nếu là link out của Zalo (vd: zalo.me/link, link.zalo.me) thì coi như external
+            // Check if it's a sub-domain or related Zalo link (e.g., zalo.me/...)
+            // but exclude non-app domains to force them to open in an external browser.
             if (parsedUrl.hostname === 'zalo.me' || parsedUrl.hostname.endsWith('.zalo.me')) {
                 if (!internalHosts.includes(parsedUrl.hostname)) {
                     return false
@@ -120,7 +133,8 @@ function createWindow() {
         }
     }
 
-    // Xử lý tất cả các popup và link mở mới từ mọi webContents (kể cả iframe/popup)
+    // Global handler for navigation and new windows to ensure external links 
+    // open in the system's default browser.
     app.on('web-contents-created', (event, contents) => {
         contents.setWindowOpenHandler(({ url }) => {
             if (url === 'about:blank') return { action: 'allow' }
@@ -136,7 +150,7 @@ function createWindow() {
             if (!isInternalZaloUrl(url)) {
                 event.preventDefault()
                 shell.openExternal(url)
-                // Nếu đây là popup trung gian (about:blank) vừa được chuyển hướng, đóng nó lại
+                // Close intermediary popup windows (e.g., about:blank redirects)
                 if (contents.id !== mainWindow?.webContents.id) {
                     contents.close()
                 }
@@ -144,20 +158,23 @@ function createWindow() {
         })
     })
 
+    // Prevent the app from quitting when the window is closed; hide it to tray instead.
     mainWindow.on('close', (e) => {
         if (!isQuitting) {
             e.preventDefault()
-            mainWindow?.hide() // minimize to tray thay vì quit
+            mainWindow?.hide()
         }
     })
 }
 
+// Ensure only one instance of the application is running
 const gotLock = app.requestSingleInstanceLock()
 
 if (!gotLock) {
     app.quit()
 } else {
     app.on('second-instance', () => {
+        // Restore and focus the main window if a second instance is started
         mainWindow?.show()
         mainWindow?.focus()
     })
@@ -167,12 +184,14 @@ app.whenReady().then(() => {
     createWindow()
     createTray(mainWindow!)
 
-    // Linux: re-show nếu click dock/taskbar
+    // On Linux, re-show the window if the dock or taskbar icon is clicked
     app.on('activate', () => {
         if (!mainWindow?.isVisible()) mainWindow?.show()
     })
 })
 
+// Standard Electron behavior: quit the app when all windows are closed, 
+// except on macOS where apps typically stay active.
 app.on('window-all-closed', () => {
     if (process.platform !== 'darwin') app.quit()
 })
