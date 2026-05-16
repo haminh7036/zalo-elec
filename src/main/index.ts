@@ -1,5 +1,5 @@
 // src/main/index.ts
-import { app, BrowserWindow, shell } from 'electron'
+import { app, BrowserWindow, shell, session } from 'electron'
 import { join } from 'path'
 import { createTray } from './tray'
 
@@ -13,7 +13,22 @@ app.on('before-quit', () => {
     isQuitting = true
 })
 
+/**
+ * Loại bỏ "Electron/xxx" và tên app khỏi User-Agent
+ * để Zalo không detect Electron và cho phép hiển thị trang QR login.
+ */
+function getChromeUserAgent(): string {
+    const ua = app.userAgentFallback
+    return ua
+        .replace(/\s*Electron\/[\w.-]+/i, '')
+        .replace(/\s*zalo-elec\/[\w.-]+/i, '')
+}
+
 function createWindow() {
+    // Giả lập Chrome UA trước khi tạo window
+    const chromeUA = getChromeUserAgent()
+    app.userAgentFallback = chromeUA
+
     mainWindow = new BrowserWindow({
         width: 1280,
         height: 800,
@@ -30,7 +45,14 @@ function createWindow() {
         autoHideMenuBar: true,
     })
 
-    mainWindow.loadURL(ZALO_URL)
+    // Override User-Agent cho session persist:zalo
+    const ses = session.fromPartition('persist:zalo')
+    ses.webRequest.onBeforeSendHeaders((details, callback) => {
+        details.requestHeaders['User-Agent'] = chromeUA
+        callback({ requestHeaders: details.requestHeaders })
+    })
+
+    mainWindow.loadURL(ZALO_URL, { userAgent: chromeUA })
 
     mainWindow.webContents.session.setPermissionRequestHandler(
         (webContents, permission, callback) => {
