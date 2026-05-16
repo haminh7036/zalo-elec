@@ -4,6 +4,7 @@ productName: Zalo
 files:
   - dist/**/*
   - resources/**/*
+  - "!node_modules"
 
 linux:
   target:

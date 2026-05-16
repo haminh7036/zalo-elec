@@ -43,7 +43,7 @@ function getChromeUserAgent(): string {
  * @returns {string} The absolute path to the resource.
  */
 function getResourcePath(relativePath: string): string {
-    return join(__dirname, '../../', relativePath)
+    return join(app.getAppPath(), relativePath)
 }
 
 /**
