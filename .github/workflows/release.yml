@@ -7,7 +7,7 @@ on:
       - master
     paths:
       - 'package.json'
-  workflow_dispatch: # Cho phép chạy thủ công từ tab Actions trên GitHub
+  workflow_dispatch:
 
 jobs:
   release:
@@ -20,7 +20,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0 # Cần thiết để kiểm tra tags
+          fetch-depth: 0
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -64,6 +64,6 @@ jobs:
           draft: false
           prerelease: false
           files: |
-            dist/*.deb
+            release/*.deb
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

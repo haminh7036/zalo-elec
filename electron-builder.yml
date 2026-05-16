@@ -1,15 +1,12 @@
 appId: com.haminh7036.zalo
 productName: Zalo
 
+directories:
+  output: release
+
 files:
   - dist/**/*
   - resources/**/*
-  - "!node_modules${/*}"
-  - "!.git${/*}"
-  - "!src${/*}"
-  - "!tsconfig.json"
-  - "!pnpm-lock.yaml"
-  - "!pnpm-workspace.yaml"
 
 linux:
   target:
