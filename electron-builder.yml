@@ -12,7 +12,7 @@ linux:
   icon: resources/icon.png
   desktop:
     entry:
-      StartupWMClass: zalo-electron   # đảm bảo taskbar grouping đúng
+      StartupWMClass: zalo-electron
 
 # Single instance lock
 protocols:
