@@ -14,15 +14,20 @@ app.on('before-quit', () => {
 })
 
 /**
- * User-Agent giả lập Zalo PC Windows chính thức.
- * Giúp Zalo server nhận diện app như Zalo Desktop → cho phép lưu tin nhắn vĩnh viễn.
+ * Loại bỏ "Electron/xxx" và tên app khỏi User-Agent
+ * để Zalo không detect Electron và cho phép hiển thị trang QR login.
  */
-const ZALO_PC_USER_AGENT =
-    'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) ZaloPC/26.3.10 Chrome/108.0.5359.215 Electron/22.3.9 Safari/537.36'
+function getChromeUserAgent(): string {
+    const ua = app.userAgentFallback
+    return ua
+        .replace(/\s*Electron\/[\w.-]+/i, '')
+        .replace(/\s*zalo-elec\/[\w.-]+/i, '')
+}
 
 function createWindow() {
-    // Đặt UA mặc định cho toàn app = Zalo PC Windows
-    app.userAgentFallback = ZALO_PC_USER_AGENT
+    // Giả lập Chrome UA trước khi tạo window
+    const chromeUA = getChromeUserAgent()
+    app.userAgentFallback = chromeUA
 
     mainWindow = new BrowserWindow({
         width: 1280,
@@ -40,21 +45,14 @@ function createWindow() {
         autoHideMenuBar: true,
     })
 
-    // Override User-Agent ở MỌI tầng:
-    // 1. Session UA → quyết định navigator.userAgent trong JavaScript
+    // Override User-Agent cho session persist:zalo
     const ses = session.fromPartition('persist:zalo')
-    ses.setUserAgent(ZALO_PC_USER_AGENT)
-
-    // 2. WebContents UA → đảm bảo webContents cũng dùng đúng UA
-    mainWindow.webContents.setUserAgent(ZALO_PC_USER_AGENT)
-
-    // 3. HTTP headers → override trực tiếp header cho mọi request
     ses.webRequest.onBeforeSendHeaders((details, callback) => {
-        details.requestHeaders['User-Agent'] = ZALO_PC_USER_AGENT
+        details.requestHeaders['User-Agent'] = chromeUA
         callback({ requestHeaders: details.requestHeaders })
     })
 
-    mainWindow.loadURL(ZALO_URL)
+    mainWindow.loadURL(ZALO_URL, { userAgent: chromeUA })
 
     mainWindow.webContents.session.setPermissionRequestHandler(
         (webContents, permission, callback) => {
