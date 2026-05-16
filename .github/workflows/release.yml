@@ -65,6 +65,5 @@ jobs:
           prerelease: false
           files: |
             dist/*.deb
-            dist/*.AppImage
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
