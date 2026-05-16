@@ -43,12 +43,6 @@ function getChromeUserAgent(): string {
  * @returns {string} The absolute path to the resource.
  */
 function getResourcePath(relativePath: string): string {
-    if (app.isPackaged) {
-        const cleanPath = relativePath.startsWith('resources/')
-            ? relativePath.replace('resources/', '')
-            : relativePath
-        return join(process.resourcesPath, cleanPath)
-    }
     return join(__dirname, '../../', relativePath)
 }
 
