@@ -1,6 +1,7 @@
 // src/main/index.ts
 import { app, BrowserWindow, shell, session } from 'electron'
 import { join } from 'path'
+import * as fs from 'fs'
 import { createTray } from './tray'
 
 const ZALO_URL = 'https://chat.zalo.me'
@@ -53,6 +54,36 @@ function createWindow() {
     })
 
     mainWindow.loadURL(ZALO_URL, { userAgent: chromeUA })
+
+    // Inject chức năng emoji của ZaDark
+    mainWindow.webContents.on('dom-ready', () => {
+        try {
+            const cssPath = app.isPackaged 
+                ? join(process.resourcesPath, 'resources/emoji/reaction.css') 
+                : join(__dirname, '../../resources/emoji/reaction.css')
+            
+            const jsPath = app.isPackaged 
+                ? join(process.resourcesPath, 'resources/emoji/zadark-reaction.min.js') 
+                : join(__dirname, '../../resources/emoji/zadark-reaction.min.js')
+                
+            const imgPath = app.isPackaged 
+                ? join(process.resourcesPath, 'resources/emoji/zalo-emoji-md.png') 
+                : join(__dirname, '../../resources/emoji/zalo-emoji-md.png')
+
+            const css = fs.readFileSync(cssPath, 'utf-8')
+            const js = fs.readFileSync(jsPath, 'utf-8')
+            const imgBase64 = fs.readFileSync(imgPath).toString('base64')
+            const imgDataUri = `data:image/png;base64,${imgBase64}`
+
+            mainWindow?.webContents.insertCSS(css)
+            mainWindow?.webContents.executeJavaScript(`
+                document.documentElement.setAttribute('data-zadark-emoji-url', '${imgDataUri}');
+                ${js}
+            `)
+        } catch (err) {
+            console.error('[Emoji Injector] Failed to inject emoji features:', err)
+        }
+    })
 
     mainWindow.webContents.session.setPermissionRequestHandler(
         (webContents, permission, callback) => {
