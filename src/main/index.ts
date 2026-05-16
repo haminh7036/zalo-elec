@@ -92,25 +92,50 @@ function createWindow() {
         }
     )
 
-    // Mở link ngoài (download, external) bằng system browser
-    mainWindow.webContents.setWindowOpenHandler(({ url }) => {
-        const isZalo = ZALO_HOSTS.some(host => url.includes(host))
-        if (!isZalo) {
+// Hàm kiểm tra xem URL có phải là trang nội bộ của Zalo không
+function isInternalZaloUrl(targetUrl: string) {
+    if (targetUrl === 'about:blank') return true;
+    try {
+        const parsedUrl = new URL(targetUrl)
+        // Chỉ giữ lại các trang đích thực sự của web app
+        const internalHosts = ['chat.zalo.me', 'id.zalo.me', 'account.zalo.me']
+        
+        // Nếu là link out của Zalo (vd: zalo.me/link, link.zalo.me) thì coi như external
+        if (parsedUrl.hostname === 'zalo.me' || parsedUrl.hostname.endsWith('.zalo.me')) {
+            if (!internalHosts.includes(parsedUrl.hostname)) {
+                return false
+            }
+        }
+        
+        return internalHosts.includes(parsedUrl.hostname)
+    } catch (err) {
+        return false
+    }
+}
+
+// Xử lý tất cả các popup và link mở mới từ mọi webContents (kể cả iframe/popup)
+app.on('web-contents-created', (event, contents) => {
+    contents.setWindowOpenHandler(({ url }) => {
+        if (url === 'about:blank') return { action: 'allow' }
+        
+        if (!isInternalZaloUrl(url)) {
             shell.openExternal(url)
             return { action: 'deny' }
         }
         return { action: 'allow' }
     })
 
-    // Thêm: cho phép navigation trong cùng window
-    mainWindow.webContents.on('will-navigate', (event, url) => {
-        const isZalo = ZALO_HOSTS.some(host => url.includes(host))
-
-        if (!isZalo) {
+    contents.on('will-navigate', (event, url) => {
+        if (!isInternalZaloUrl(url)) {
             event.preventDefault()
             shell.openExternal(url)
+            // Nếu đây là popup trung gian (about:blank) vừa được chuyển hướng, đóng nó lại
+            if (contents.id !== mainWindow?.webContents.id) {
+                contents.close()
+            }
         }
     })
+})
 
     mainWindow.on('close', (e) => {
         if (!isQuitting) {
