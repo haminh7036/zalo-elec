@@ -24,10 +24,36 @@ function getChromeUserAgent(): string {
         .replace(/\s*zalo-elec\/[\w.-]+/i, '')
 }
 
-function createWindow() {
+/**
+ * Tìm đường dẫn tới thư mục zadark-extension trong resources.
+ * Hỗ trợ cả dev (chạy từ source) và production (đóng gói app).
+ */
+function getZaDarkExtensionPath(): string {
+    // Trong production, app.isPackaged = true, resources nằm ngoài asar
+    if (app.isPackaged) {
+        return join(process.resourcesPath, 'resources', 'zadark-extension')
+    }
+    // Trong dev, chạy từ thư mục project
+    return join(__dirname, '../../resources/zadark-extension')
+}
+
+async function createWindow() {
     // Giả lập Chrome UA trước khi tạo window
     const chromeUA = getChromeUserAgent()
     app.userAgentFallback = chromeUA
+
+    // Load ZaDark extension vào session persist:zalo trước khi tạo window
+    const ses = session.fromPartition('persist:zalo')
+
+    try {
+        const extPath = getZaDarkExtensionPath()
+        const ext = await ses.extensions.loadExtension(extPath, {
+            allowFileAccess: true,
+        })
+        console.log(`[ZaDark] Extension loaded: ${ext.name} v${ext.version}`)
+    } catch (err) {
+        console.error('[ZaDark] Failed to load extension:', err)
+    }
 
     mainWindow = new BrowserWindow({
         width: 1280,
@@ -46,7 +72,6 @@ function createWindow() {
     })
 
     // Override User-Agent cho session persist:zalo
-    const ses = session.fromPartition('persist:zalo')
     ses.webRequest.onBeforeSendHeaders((details, callback) => {
         details.requestHeaders['User-Agent'] = chromeUA
         callback({ requestHeaders: details.requestHeaders })
@@ -100,8 +125,8 @@ if (!gotLock) {
     })
 }
 
-app.whenReady().then(() => {
-    createWindow()
+app.whenReady().then(async () => {
+    await createWindow()
     createTray(mainWindow!)
 
     // Linux: re-show nếu click dock/taskbar

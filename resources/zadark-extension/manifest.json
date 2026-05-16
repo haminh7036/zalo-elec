@@ -1,0 +1,75 @@
+{
+  "manifest_version": 3,
+  "name": "ZaDark – Zalo Dark Mode",
+  "version": "26.2",
+  "description": "__MSG_appDesc__",
+  "default_locale": "vi",
+  "author": "Quaric",
+  "homepage_url": "https://zadark.com",
+  "icons": {
+    "16": "images/zadark-icon-16.png",
+    "32": "images/zadark-icon-32.png",
+    "48": "images/zadark-icon-48.png",
+    "128": "images/zadark-icon-128.png"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "*://chat.zalo.me/*"
+      ],
+      "run_at": "document_end",
+      "css": [
+        "css/zadark-fonts.min.css",
+        "css/zadark-popup.min.css",
+        "css/zadark.min.css"
+      ],
+      "js": [
+        "libs/libs.min.js",
+        "js/zadark-shared.min.js",
+        "js/fonts.min.js",
+        "js/browser.min.js",
+        "js/zadark-translate.min.js",
+        "js/utils.min.js",
+        "js/zadark.min.js"
+      ]
+    },
+    {
+      "matches": [
+        "*://chat.zalo.me/*"
+      ],
+      "run_at": "document_end",
+      "world": "MAIN",
+      "js": [
+        "js/zadark-zconv.min.js",
+        "js/zadark-reaction.min.js"
+      ]
+    }
+  ],
+  "permissions": [
+    "storage"
+  ],
+  "host_permissions": [
+    "*://chat.zalo.me/*"
+  ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "images/zadark-icon-16.png",
+      "32": "images/zadark-icon-32.png",
+      "48": "images/zadark-icon-48.png",
+      "128": "images/zadark-icon-128.png"
+    }
+  },
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "js/zadark-zconv.min.js",
+        "fonts/*",
+        "images/*"
+      ],
+      "matches": [
+        "*://chat.zalo.me/*"
+      ]
+    }
+  ]
+}
