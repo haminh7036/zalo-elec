@@ -1,10 +1,9 @@
 # Zalo-elec
 
-**Zalo-elec** là một ứng dụng wrapper (bọc web) không chính thức dành cho Zalo Web (`https://chat.zalo.me`), được xây dựng bằng Electron và TypeScript, mang lại trải nghiệm như một ứng dụng desktop thực thụ trên Linux.
+**Zalo-elec** là một ứng dụng wrapper (bọc web) không chính thức dành cho Zalo Web (`https://chat.zalo.me`), được xây dựng bằng Electron và TypeScript, mang lại trải nghiệm như một ứng dụng desktop trên Linux.
 
 ## Tính Năng Chính
 
-- **Vượt Qua Phát Hiện Electron:** Ứng dụng tự động thay đổi `User-Agent` để giả lập trình duyệt Chrome tiêu chuẩn. Điều này giúp vượt qua cơ chế chặn Electron của Zalo, cho phép bạn sử dụng đầy đủ các tính năng như đăng nhập bằng mã QR.
 - **Tích Hợp Hệ Thống:**
   - Hỗ trợ System Tray (khay hệ thống) để chạy ngầm và dễ dàng mở lại.
   - Ngăn chặn mở nhiều cửa sổ cùng lúc (Single Instance Lock).
