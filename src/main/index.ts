@@ -19,7 +19,7 @@ function createWindow() {
         minWidth: 800,
         minHeight: 600,
         title: 'Zalo',
-        icon: join(__dirname, '../../resources/zalo.ico'),
+        icon: join(__dirname, '../../resources/icon.png'),
         webPreferences: {
             // Không cần preload nếu chỉ wrap web
             contextIsolation: true,

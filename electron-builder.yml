@@ -10,9 +10,10 @@ linux:
     - AppImage
     - deb
   category: Network
-  icon: resources/zalo.ico
+  icon: resources/icon.png
   desktop:
-    StartupWMClass: zalo-electron   # đảm bảo taskbar grouping đúng
+    entry:
+      StartupWMClass: zalo-electron   # đảm bảo taskbar grouping đúng
 
 # Single instance lock
 protocols:
