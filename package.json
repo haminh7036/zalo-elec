@@ -4,6 +4,8 @@
   "description": "Zalo Web Electron",
   "license": "MIT",
   "author": "haminh7036",
+  "email": "minhha7036@gmail.com",
+  "homepage": "https://github.com/haminh7036/zalo-elec.git",
   "main": "dist/main/index.js",
   "scripts": {
     "build": "tsc",
