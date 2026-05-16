@@ -7,7 +7,6 @@ files:
 
 linux:
   target:
-    - AppImage
     - deb
   category: Network
   icon: resources/icon.png
