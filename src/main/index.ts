@@ -5,10 +5,13 @@ import * as fs from 'fs'
 import { createTray } from './tray'
 
 const ZALO_URL = 'https://chat.zalo.me'
-const ZALO_HOSTS = ['chat.zalo.me', 'zalo.me', 'id.zalo.me', 'account.zalo.me']
 
 let mainWindow: BrowserWindow | null = null
 let isQuitting = false
+
+// Đặt tên app hiển thị cho thông báo (Notifications) và OS
+app.setName('Zalo')
+app.setAppUserModelId('com.haminh7036.zalo')
 
 app.on('before-quit', () => {
     isQuitting = true
@@ -58,16 +61,16 @@ function createWindow() {
     // Inject chức năng emoji của ZaDark
     mainWindow.webContents.on('dom-ready', () => {
         try {
-            const cssPath = app.isPackaged 
-                ? join(process.resourcesPath, 'resources/emoji/reaction.css') 
+            const cssPath = app.isPackaged
+                ? join(process.resourcesPath, 'resources/emoji/reaction.css')
                 : join(__dirname, '../../resources/emoji/reaction.css')
-            
-            const jsPath = app.isPackaged 
-                ? join(process.resourcesPath, 'resources/emoji/zadark-reaction.min.js') 
+
+            const jsPath = app.isPackaged
+                ? join(process.resourcesPath, 'resources/emoji/zadark-reaction.min.js')
                 : join(__dirname, '../../resources/emoji/zadark-reaction.min.js')
-                
-            const imgPath = app.isPackaged 
-                ? join(process.resourcesPath, 'resources/emoji/zalo-emoji-md.png') 
+
+            const imgPath = app.isPackaged
+                ? join(process.resourcesPath, 'resources/emoji/zalo-emoji-md.png')
                 : join(__dirname, '../../resources/emoji/zalo-emoji-md.png')
 
             const css = fs.readFileSync(cssPath, 'utf-8')
@@ -92,50 +95,50 @@ function createWindow() {
         }
     )
 
-// Hàm kiểm tra xem URL có phải là trang nội bộ của Zalo không
-function isInternalZaloUrl(targetUrl: string) {
-    if (targetUrl === 'about:blank') return true;
-    try {
-        const parsedUrl = new URL(targetUrl)
-        // Chỉ giữ lại các trang đích thực sự của web app
-        const internalHosts = ['chat.zalo.me', 'id.zalo.me', 'account.zalo.me']
-        
-        // Nếu là link out của Zalo (vd: zalo.me/link, link.zalo.me) thì coi như external
-        if (parsedUrl.hostname === 'zalo.me' || parsedUrl.hostname.endsWith('.zalo.me')) {
-            if (!internalHosts.includes(parsedUrl.hostname)) {
-                return false
+    // Hàm kiểm tra xem URL có phải là trang nội bộ của Zalo không
+    function isInternalZaloUrl(targetUrl: string) {
+        if (targetUrl === 'about:blank') return true;
+        try {
+            const parsedUrl = new URL(targetUrl)
+            // Chỉ giữ lại các trang đích thực sự của web app
+            const internalHosts = ['chat.zalo.me', 'id.zalo.me', 'account.zalo.me']
+
+            // Nếu là link out của Zalo (vd: zalo.me/link, link.zalo.me) thì coi như external
+            if (parsedUrl.hostname === 'zalo.me' || parsedUrl.hostname.endsWith('.zalo.me')) {
+                if (!internalHosts.includes(parsedUrl.hostname)) {
+                    return false
+                }
             }
+
+            return internalHosts.includes(parsedUrl.hostname)
+        } catch (err) {
+            return false
         }
-        
-        return internalHosts.includes(parsedUrl.hostname)
-    } catch (err) {
-        return false
     }
-}
 
-// Xử lý tất cả các popup và link mở mới từ mọi webContents (kể cả iframe/popup)
-app.on('web-contents-created', (event, contents) => {
-    contents.setWindowOpenHandler(({ url }) => {
-        if (url === 'about:blank') return { action: 'allow' }
-        
-        if (!isInternalZaloUrl(url)) {
-            shell.openExternal(url)
-            return { action: 'deny' }
-        }
-        return { action: 'allow' }
-    })
+    // Xử lý tất cả các popup và link mở mới từ mọi webContents (kể cả iframe/popup)
+    app.on('web-contents-created', (event, contents) => {
+        contents.setWindowOpenHandler(({ url }) => {
+            if (url === 'about:blank') return { action: 'allow' }
 
-    contents.on('will-navigate', (event, url) => {
-        if (!isInternalZaloUrl(url)) {
-            event.preventDefault()
-            shell.openExternal(url)
-            // Nếu đây là popup trung gian (about:blank) vừa được chuyển hướng, đóng nó lại
-            if (contents.id !== mainWindow?.webContents.id) {
-                contents.close()
+            if (!isInternalZaloUrl(url)) {
+                shell.openExternal(url)
+                return { action: 'deny' }
             }
-        }
+            return { action: 'allow' }
+        })
+
+        contents.on('will-navigate', (event, url) => {
+            if (!isInternalZaloUrl(url)) {
+                event.preventDefault()
+                shell.openExternal(url)
+                // Nếu đây là popup trung gian (about:blank) vừa được chuyển hướng, đóng nó lại
+                if (contents.id !== mainWindow?.webContents.id) {
+                    contents.close()
+                }
+            }
+        })
     })
-})
 
     mainWindow.on('close', (e) => {
         if (!isQuitting) {
