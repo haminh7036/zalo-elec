@@ -4,6 +4,7 @@ import { join } from 'path'
 import { createTray } from './tray'
 
 const ZALO_URL = 'https://chat.zalo.me'
+const ZALO_HOSTS = ['chat.zalo.me', 'zalo.me', 'id.zalo.me', 'account.zalo.me']
 
 let mainWindow: BrowserWindow | null = null
 let isQuitting = false
@@ -40,13 +41,22 @@ function createWindow() {
 
     // Mở link ngoài (download, external) bằng system browser
     mainWindow.webContents.setWindowOpenHandler(({ url }) => {
-        const zaloHosts = ['chat.zalo.me', 'zalo.me', 'id.zalo.me', 'account.zalo.me']
-        const isZalo = zaloHosts.some(host => url.includes(host))
+        const isZalo = ZALO_HOSTS.some(host => url.includes(host))
         if (!isZalo) {
             shell.openExternal(url)
             return { action: 'deny' }
         }
         return { action: 'allow' }
+    })
+
+    // Thêm: cho phép navigation trong cùng window
+    mainWindow.webContents.on('will-navigate', (event, url) => {
+        const isZalo = ZALO_HOSTS.some(host => url.includes(host))
+
+        if (!isZalo) {
+            event.preventDefault()
+            shell.openExternal(url)
+        }
     })
 
     mainWindow.on('close', (e) => {
